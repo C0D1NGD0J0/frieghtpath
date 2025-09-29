@@ -12,6 +12,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@types/node": "^24.6.0",
     "@types/socket.io": "^3.0.1"
   }
 }
