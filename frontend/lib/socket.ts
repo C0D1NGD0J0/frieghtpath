@@ -1,22 +1,46 @@
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
+import type {
+  StartComparisonPayload,
+  ErrorPayload,
+  SessionCreatedPayload,
+  StatusPayload,
+  ChunkPayload,
+  CompletePayload,
+} from "./types";
+
+export interface ServerToClientEvents {
+  error: (data: ErrorPayload) => void;
+  sessionCreated: (data: SessionCreatedPayload) => void;
+  modelStatus: (data: StatusPayload) => void;
+  modelChunk: (data: ChunkPayload) => void;
+  modelComplete: (data: CompletePayload) => void;
+  modelError: (data: ErrorPayload) => void;
+}
+
+export interface ClientToServerEvents {
+  startComparison: (data: StartComparisonPayload) => void;
+}
+
+export type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 class SocketService {
-  private socket: Socket | null = null;
+  private socket: TypedSocket | null = null;
 
-  connect(token: string): Socket {
+  connect(token: string): TypedSocket {
     if (this.socket?.connected) {
       return this.socket;
     }
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    const socketUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
 
     this.socket = io(socketUrl, {
       auth: { token },
-      transports: ['websocket'],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-    });
+    }) as TypedSocket;
 
     return this.socket;
   }
@@ -28,7 +52,7 @@ class SocketService {
     }
   }
 
-  getSocket(): Socket | null {
+  getSocket(): TypedSocket | null {
     return this.socket;
   }
 }
