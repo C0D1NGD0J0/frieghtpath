@@ -2,7 +2,6 @@ import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Session, SessionDocument } from './model/session.model';
-import { AIProviderName, AIModelName } from 'src/ai-providers/interface';
 
 @Injectable()
 export class SessionsService {
@@ -12,7 +11,7 @@ export class SessionsService {
 
   async createSession(
     prompt: string,
-    models: { provider: AIProviderName; modelName: AIModelName }[],
+    models: { provider: string; modelName: string }[],
     userId: string,
   ): Promise<SessionDocument> {
     const responses = {};
@@ -48,6 +47,7 @@ export class SessionsService {
       estimatedCost?: number;
     },
     error?: string,
+    content?: string,
   ): Promise<SessionDocument | null> {
     const session = await this.sessionModel.findById(sessionId);
     if (!session) {
@@ -57,6 +57,10 @@ export class SessionsService {
     const update: any = {
       [`responses.${modelName}.status`]: status,
     };
+
+    if (content) {
+      update[`responses.${modelName}.content`] = content;
+    }
 
     if (metrics) {
       update[`responses.${modelName}.metrics.endTime`] = new Date();

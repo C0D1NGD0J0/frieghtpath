@@ -1,5 +1,3 @@
-import { AIModelName, AIProviderName } from 'src/ai-providers/interface';
-
 export const SOCKET_EVENTS_IN = {
   START_COMPARISON: 'startComparison',
 } as const;
@@ -15,7 +13,7 @@ export const SOCKET_EVENTS_OUT = {
 
 export interface StartComparisonPayload {
   prompt: string;
-  models: { provider: AIProviderName; modelName: AIModelName }[];
+  models: { provider: string; modelName: string }[];
 }
 
 export interface ErrorPayload {
@@ -29,18 +27,18 @@ export interface SessionCreatedPayload {
 export interface ModelStatusPayload {
   sessionId: string;
   status: 'streaming' | 'complete' | 'error';
-  model: { provider: AIProviderName; modelName: AIModelName };
+  model: string;
 }
 
 export interface ModelChunkPayload {
   sessionId: string;
-  model: { provider: AIProviderName; modelName: AIModelName };
+  model: string;
   chunk: string;
 }
 
 export interface ModelCompletePayload {
   sessionId: string;
-  model: { provider: AIProviderName; modelName: AIModelName };
+  model: string;
   metrics: {
     durationInMilliseconds: number;
     tokensUsed: number;
@@ -49,7 +47,7 @@ export interface ModelCompletePayload {
 }
 
 export interface ModelErrorPayload {
-  model: { provider: AIProviderName; modelName: AIModelName };
   sessionId: string;
+  model: string;
   error: string;
 }

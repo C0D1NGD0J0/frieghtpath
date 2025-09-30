@@ -7,13 +7,14 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { SessionsService } from '../sessions/sessions.service';
-import { AiProvidersService } from '../ai-providers/ai-providers.service';
-import { ClerkService } from '../auth/clerk.service';
 import { Logger } from '@nestjs/common';
-import { AIModelName, AIProviderName } from 'src/ai-providers/interface';
+import { Server, Socket } from 'socket.io';
+
+import { ClerkService } from '../auth/clerk.service';
 import * as eventsConstants from './events.constants';
+import { SessionsService } from '../sessions/sessions.service';
+import { AIProviderName } from '../ai-providers/interface/index';
+import { AiProvidersService } from '../ai-providers/ai-providers.service';
 
 @WebSocketGateway({
   cors: {
@@ -103,7 +104,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       client.emit(eventsConstants.SOCKET_EVENTS_OUT.SESSION_CREATED, {
-        sessionId: session._id,
+        sessionId: session.id,
       } as eventsConstants.SessionCreatedPayload);
 
       const streamPromises = models.map((model) =>
@@ -141,10 +142,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(`Provider not found: ${providerName}:${modelName}`);
       client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_ERROR, {
         sessionId,
-        model: {
-          provider: providerName as AIProviderName,
-          modelName: modelName as AIModelName,
-        },
+        model: modelName,
         error: 'Provider not found',
       } as eventsConstants.ModelErrorPayload);
       return;
@@ -152,48 +150,54 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_STATUS, {
       sessionId,
-      model: {
-        provider: providerName as AIProviderName,
-        modelName: modelName as AIModelName,
-      },
+      model: modelName,
       status: 'streaming',
     } as eventsConstants.ModelStatusPayload);
 
     let fullContent = '';
+    let chunkCounter = 0;
+
     await provider.streamCompletion(
       prompt,
       (chunk: string) => {
         fullContent += chunk;
         client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_CHUNK, {
           sessionId,
-          model: {
-            provider: providerName as AIProviderName,
-            modelName: modelName as AIModelName,
-          },
+          model: modelName,
           chunk,
         } as eventsConstants.ModelChunkPayload);
 
-        this.sessionsService
-          .appendModelContent(sessionId, modelName, fullContent)
-          .catch((err) => this.logger.error('Failed to update content:', err));
+        chunkCounter++; // simple mechanism to reduce db writes
+        if (chunkCounter % 10 === 0) {
+          this.sessionsService
+            .updateModelResponse(
+              sessionId,
+              modelName,
+              'streaming',
+              undefined,
+              undefined,
+              fullContent,
+            )
+            .catch((err) =>
+              this.logger.error('Failed to update content:', err),
+            );
+        }
       },
 
       async (metrics) => {
         this.logger.log(`${modelName} completed for session ${sessionId}`);
-
         await this.sessionsService.updateModelResponse(
           sessionId,
           modelName,
           'complete',
           metrics,
+          undefined,
+          fullContent,
         );
 
         client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_COMPLETE, {
           sessionId,
-          model: {
-            provider: providerName as AIProviderName,
-            modelName: modelName as AIModelName,
-          },
+          model: modelName,
           metrics,
         } as eventsConstants.ModelCompletePayload);
       },
@@ -206,14 +210,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           'error',
           undefined,
           error,
+          fullContent,
         );
 
         client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_ERROR, {
           sessionId,
-          model: {
-            provider: providerName as AIProviderName,
-            modelName: modelName as AIModelName,
-          },
+          model: modelName,
           error,
         } as eventsConstants.ModelErrorPayload);
       },
