@@ -4,7 +4,7 @@ import { ClerkAuthGuard } from './clerk.guard';
 
 @Global()
 @Module({
-  providers: [ClerkService],
-  exports: [ClerkService],
+  providers: [ClerkService, ClerkAuthGuard],
+  exports: [ClerkService, ClerkAuthGuard],
 })
 export class AuthModule {}
