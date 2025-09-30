@@ -29,8 +29,12 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@nestjs/testing": "^11.1.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.6.0",
     "@types/socket.io": "^3.0.1",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.4",
     "typescript": "^5.9.2"
   }
 }
