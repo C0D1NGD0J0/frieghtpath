@@ -1,14 +1,16 @@
-export interface AIProvider {
-  providerName: 'google' | 'anthropic';
-  modelName: 'gemini-pro' | 'claude-4-sonnet';
+export enum AIProviderName {
+  GOOGLE = 'google',
+  ANTHROPIC = 'anthropic',
+}
 
-  /**
-   * Stream completion from the AI model
-   * @param prompt - User's input text
-   * @param onChunk - Callback fired for each text chunk received
-   * @param onComplete - Callback fired when streaming completes with metrics
-   * @param onError - Callback fired if an error occurs
-   */
+export enum AIModelName {
+  GEMINI_PRO = 'gemini-pro',
+  CLAUDE_4_SONNET = 'claude-sonnet-4-5-20250929',
+}
+export interface AIProvider {
+  providerName: AIProviderName;
+  modelName: AIModelName;
+
   streamCompletion(
     prompt: string,
     onChunk: (chunk: string) => void,
