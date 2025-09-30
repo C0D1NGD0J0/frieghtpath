@@ -8,7 +8,7 @@ export class ClerkService {
 
   constructor(private configService: ConfigService) {
     this.clerkClient = createClerkClient({
-      secretKey: this.configService.get(process.env.CLERK_SECRET_KEY || ''),
+      secretKey: process.env.CLERK_SECRET_KEY || '',
     });
   }
 
@@ -16,7 +16,7 @@ export class ClerkService {
     try {
       const verified = await verifyToken(token, {
         authorizedParties: [process.env.CORS_ORIGIN || ''],
-        secretKey: this.configService.get(process.env.CLERK_SECRET_KEY || ''),
+        secretKey: process.env.CLERK_SECRET_KEY || '',
       });
       return verified.sub;
     } catch (error) {

@@ -13,7 +13,7 @@ export const SOCKET_EVENTS_OUT = {
 
 export interface StartComparisonPayload {
   prompt: string;
-  models: { provider: string; modelName: string }[];
+  providers: string[];
 }
 
 export interface ErrorPayload {

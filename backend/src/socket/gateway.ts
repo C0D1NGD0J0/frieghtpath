@@ -69,27 +69,48 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(eventsConstants.SOCKET_EVENTS_IN.START_COMPARISON)
   async handleComparison(
-    @MessageBody() data: eventsConstants.StartComparisonPayload,
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ) {
-    const { prompt, models } = data;
+    const { prompt, providers } = data;
     const userId = client.data.userId;
 
     if (!prompt || !prompt.trim()) {
+      this.logger.error('Prompt validation failed');
       client.emit(eventsConstants.SOCKET_EVENTS_OUT.ERROR, {
         message: 'Prompt is required',
       } as eventsConstants.ErrorPayload);
       return;
     }
 
-    if (!models || models.length < 2) {
+    if (!providers || providers.length < 2) {
+      this.logger.error(
+        `Providers validation failed: ${JSON.stringify(providers)}`,
+      );
       client.emit(eventsConstants.SOCKET_EVENTS_OUT.ERROR, {
-        message: 'At least 2 models are required',
+        message: 'At least 2 providers are required',
       } as eventsConstants.ErrorPayload);
       return;
     }
 
     try {
+      const providerInstances = providers.map((providerName) =>
+        this.aiProvidersService.getProvider(providerName as AIProviderName),
+      );
+
+      const missingProvider = providers.find((p, i) => !providerInstances[i]);
+      if (missingProvider) {
+        client.emit(eventsConstants.SOCKET_EVENTS_OUT.ERROR, {
+          message: `Provider not found: ${missingProvider}`,
+        } as eventsConstants.ErrorPayload);
+        return;
+      }
+
+      const models = providerInstances.map((provider) => ({
+        provider: provider.providerName,
+        modelName: provider.modelName,
+      }));
+
       const session = await this.sessionsService.createSession(
         prompt,
         models,
@@ -107,15 +128,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         sessionId: session.id,
       } as eventsConstants.SessionCreatedPayload);
 
-      const streamPromises = models.map((model) =>
+      const streamPromises = providers.map((providerName) =>
         // ideally we would use redis or a message queue here but for now db is fine
-        this.streamModelResponse(
-          client,
-          session.id,
-          model.provider,
-          model.modelName,
-          prompt,
-        ),
+        this.streamModelResponse(client, session.id, providerName, prompt),
       );
 
       await Promise.allSettled(streamPromises);
@@ -131,7 +146,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client: Socket,
     sessionId: string,
     providerName: string,
-    modelName: string,
     prompt: string,
   ) {
     const provider = this.aiProvidersService.getProvider(
@@ -139,14 +153,15 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     if (!provider) {
-      this.logger.error(`Provider not found: ${providerName}:${modelName}`);
       client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_ERROR, {
         sessionId,
-        model: modelName,
+        model: providerName,
         error: 'Provider not found',
       } as eventsConstants.ModelErrorPayload);
       return;
     }
+
+    const modelName = provider.modelName;
 
     client.emit(eventsConstants.SOCKET_EVENTS_OUT.MODEL_STATUS, {
       sessionId,

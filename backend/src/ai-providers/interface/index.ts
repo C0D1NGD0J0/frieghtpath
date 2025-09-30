@@ -4,7 +4,7 @@ export enum AIProviderName {
 }
 
 export enum AIModelName {
-  GEMINI_PRO = 'gemini-pro',
+  GEMINI_PRO = 'gemini-2.0-flash-exp',
   CLAUDE_4_SONNET = 'claude-sonnet-4-5-20250929',
 }
 export interface AIProvider {

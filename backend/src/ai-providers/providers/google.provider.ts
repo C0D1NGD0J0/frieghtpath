@@ -16,9 +16,7 @@ export class GoogleProvider implements AIProvider {
   private client: GoogleGenAI;
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>(
-      process.env.GOOGLE_GEMINI_API_KEY!,
-    );
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY! || '';
     this.client = new GoogleGenAI({ apiKey });
   }
 
