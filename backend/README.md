@@ -1,98 +1,270 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# AI Model Playground - Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS backend for comparing AI model responses in real-time via WebSocket streaming.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- **Framework:** NestJS with TypeScript
+- **Database:** MongoDB with Mongoose
+- **Authentication:** Clerk (@clerk/backend)
+- **Real-time:** Socket.IO (WebSockets)
+- **AI Providers:**
+  - Google Gemini (@google/genai)
+  - Anthropic Claude (@anthropic-ai/sdk)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Project Structure
 
-## Project setup
-
-```bash
-$ npm install
+```
+src/
+├── ai-providers/          # AI provider implementations
+│   ├── interface/         # Provider interface and types
+│   ├── providers/         # Google and Anthropic implementations
+│   ├── ai-providers.module.ts
+│   └── ai-providers.service.ts
+├── auth/                  # Clerk authentication
+│   ├── clerk.service.ts   # Token verification
+│   ├── clerk.middleware.ts # Extract token from requests
+│   ├── clerk.guard.ts     # Protect routes
+│   ├── public.decorator.ts
+│   └── user-id.decorator.ts
+├── sessions/              # Session management
+│   ├── schemas/           # MongoDB session schema
+│   ├── sessions.controller.ts
+│   ├── sessions.service.ts
+│   └── sessions.module.ts
+├── socket/                # WebSocket gateway
+│   ├── gateway.ts         # Main WebSocket handler
+│   ├── events.constants.ts # Event names and types
+│   └── socket.module.ts
+├── app.module.ts
+└── main.ts
 ```
 
-## Compile and run the project
+## Setup
 
-```bash
-# development
-$ npm run start
+### 1. Install Dependencies
+npm install
 
-# watch mode
-$ npm run start:dev
+### 2. Environment Variables
+Create `.env` file:
 
-# production mode
-$ npm run start:prod
+PORT=3001
+CORS_ORIGIN=http://localhost:3000
+
+# Clerk Authentication
+CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# AI Providers
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_GEMINI_API_KEY=AIza...
+
+### 3. Start MongoDB
+MONGODB_URI=mongodb://localhost:27017/ai-playground
+# Using Docker
+docker run -d -p 27017:27017 --name mongodb mongo
+
+### 4. Run the Server
+# Development
+npm run start:dev
+
+# Production
+npm run build
+npm run start:prod
+
+Server runs on `http://localhost:3001`
+
+## API Endpoints
+
+### REST API
+
+**Authentication:** All endpoints require JWT token in `Authorization: Bearer <token>` header
+
+#### `GET /`
+Health check endpoint (public)
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-09-30T...",
+  "service": "AI Playground API"
+}
 ```
 
-## Run tests
+#### `GET /sessions`
+Get all sessions for authenticated user
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+**Response:**
+```json
+[
+  {
+    "_id": "session_id",
+    "prompt": "User's prompt",
+    "models": [
+      { "provider": "google", "modelName": "gemini-2.0-flash-exp" },
+      { "provider": "anthropic", "modelName": "claude-sonnet-4-5-20250929" }
+    ],
+    "responses": { ... },
+    "userId": "user_id",
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+]
 ```
 
-## Deployment
+#### `GET /sessions/:id`
+Get specific session (ownership verified)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+**Response:** Single session object
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### WebSocket API
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+**Connect:** `ws://localhost:3001`
+
+**Authentication:** Pass JWT token in socket handshake
+```javascript
+socket = io('http://localhost:3001', {
+  auth: { token: '<jwt_token>' }
+});
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### Client → Server Events
 
-## Resources
+**`startComparison`**
+```typescript
+{
+  prompt: string;
+  providers: string[];  // ['google', 'anthropic']
+}
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+#### Server → Client Events
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+**`error`**
+```typescript
+{
+  message: string;
+}
+```
 
-## Support
+**`sessionCreated`**
+```typescript
+{
+  sessionId: string;
+}
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+**`modelStatus`**
+```typescript
+{
+  sessionId: string;
+  model: string;  // Model name
+  status: 'streaming' | 'complete' | 'error';
+}
+```
 
-## Stay in touch
+**`modelChunk`**
+```typescript
+{
+  sessionId: string;
+  model: string;
+  chunk: string;  // Text chunk
+}
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+**`modelComplete`**
+```typescript
+{
+  sessionId: string;
+  model: string;
+  metrics: {
+    durationInMilliseconds: number;
+    tokensUsed: number;
+    estimatedCost: number;
+  };
+}
+```
 
-## License
+**`modelError`**
+```typescript
+{
+  sessionId: string;
+  model: string;
+  error: string;
+}
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Architecture
+
+### AI Provider System
+
+Each provider implements the `AIProvider` interface:
+
+```typescript
+interface AIProvider {
+  providerName: AIProviderName;
+  modelName: AIModelName;
+
+  streamCompletion(
+    prompt: string,
+    onChunk: (chunk: string) => void,
+    onComplete: (metrics: CompletionMetrics) => void,
+    onError: (error: string) => void,
+  ): Promise<void>;
+
+  calculateCost(tokensUsed: number): number;
+}
+```
+
+**Adding a New Provider:**
+
+1. Create provider class in `src/ai-providers/providers/`
+2. Implement `AIProvider` interface
+3. Register in `AiProvidersService`
+4. Add to `AIProviderName` and `AIModelName` enums
+
+### Authentication Flow
+
+1. Client sends JWT token in WebSocket handshake
+2. `ClerkMiddleware` verifies token on connection
+3. `userId` attached to socket: `client.data.userId`
+4. All operations use this `userId` for ownership
+
+### Session Storage
+
+Sessions stored in MongoDB with:
+- User's prompt
+- Selected models (provider + model name)
+- Real-time responses from each model
+- Status tracking (streaming/complete/error)
+- Performance metrics
+
+## Development
+
+### Key Files to Modify
+
+**Add AI Provider:**
+- `src/ai-providers/providers/new-provider.provider.ts`
+- `src/ai-providers/ai-providers.service.ts`
+- `src/ai-providers/interface/index.ts`
+
+**Modify WebSocket Events:**
+- `src/socket/events.constants.ts` (add event types)
+- `src/socket/gateway.ts` (handle events)
+
+**Change Session Schema:**
+- `src/sessions/schemas/session.schema.ts`
+
+### Testing
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
