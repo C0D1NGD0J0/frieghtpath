@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenAI } from '@google/genai';
-import { AIProvider, CompletionMetrics } from '../interface/index';
+import {
+  AIProvider,
+  AIProviderName,
+  AIModelName,
+  CompletionMetrics,
+} from '../interface/index';
 
 @Injectable()
 export class GoogleProvider implements AIProvider {
-  providerName: 'google' | 'anthropic' = 'google';
-  modelName: 'gemini-pro' | 'claude-4-sonnet' = 'gemini-pro';
+  providerName = AIProviderName.GOOGLE;
+  modelName = AIModelName.GEMINI_PRO;
 
   private client: GoogleGenAI;
 
