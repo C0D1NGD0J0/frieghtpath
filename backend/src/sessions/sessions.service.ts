@@ -2,6 +2,7 @@ import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Session, SessionDocument } from './model/session.model';
+import { AIProviderName, AIModelName } from 'src/ai-providers/interface';
 
 @Injectable()
 export class SessionsService {
@@ -11,7 +12,7 @@ export class SessionsService {
 
   async createSession(
     prompt: string,
-    models: { provider: string; modelName: string }[],
+    models: { provider: AIProviderName; modelName: AIModelName }[],
     userId: string,
   ): Promise<SessionDocument> {
     const responses = {};
@@ -25,7 +26,7 @@ export class SessionsService {
       };
     });
 
-    const session = new this.sessionModel({
+    let session = new this.sessionModel({
       prompt,
       models,
       responses,
@@ -33,7 +34,8 @@ export class SessionsService {
       userId,
     });
 
-    return session.save();
+    session = await session.save();
+    return session;
   }
 
   async updateModelResponse(

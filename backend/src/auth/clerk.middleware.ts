@@ -1,9 +1,12 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { ClerkService } from './clerk.service';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class ClerkMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(ClerkMiddleware.name);
+
   constructor(private clerkService: ClerkService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -20,6 +23,7 @@ export class ClerkMiddleware implements NestMiddleware {
         req['clerkAuth'] = { isAuthenticated: false, userId: null };
       }
     } else {
+      this.logger.error(`No Authorization header token found`);
       req['clerkAuth'] = { isAuthenticated: false, userId: null };
     }
 
