@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { SessionsModule } from './sessions/sessions.module';
 import { AuthModule } from './auth/auth.module';
 import { ClerkMiddleware } from './auth/clerk.middleware';
+import { AiProvidersModule } from './ai-providers/ai-providers.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ClerkMiddleware } from './auth/clerk.middleware';
     MongooseModule.forRoot(process.env.MONGODB_URI || ''),
     AuthModule,
     SessionsModule,
+    AiProvidersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
