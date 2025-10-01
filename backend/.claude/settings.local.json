@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:clerk.com)"
+      "WebFetch(domain:clerk.com)",
+      "Read(//Users/sgd/dev/2025/interviews/freight_path/**)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
