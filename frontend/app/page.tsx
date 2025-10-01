@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { socketService } from "@/lib/socket";
 import styles from "./page.module.scss";
@@ -29,7 +30,8 @@ const AVAILABLE_PROVIDERS: Provider[] = [
 ];
 
 export default function Home() {
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [selectedProviders, setSelectedProviders] = useState<string[]>([
     "google",
@@ -38,6 +40,12 @@ export default function Home() {
   const [responses, setResponses] = useState<Record<string, ModelResponse>>({});
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   useEffect(() => {
     if (!isSignedIn) return;
