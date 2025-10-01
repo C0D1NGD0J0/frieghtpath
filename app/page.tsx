@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, SignOutButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { socketService } from "@/lib/socket";
@@ -160,8 +160,13 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>AI Model Playground</h1>
-        <p>Compare AI responses side-by-side</p>
+        <div>
+          <h1>AI Model Playground</h1>
+          <p>Compare AI responses side-by-side</p>
+        </div>
+        <SignOutButton>
+          <button className={styles.logoutButton}>Sign Out</button>
+        </SignOutButton>
       </header>
 
       <div className={styles.controls}>
