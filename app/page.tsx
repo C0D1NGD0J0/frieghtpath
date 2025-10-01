@@ -137,6 +137,8 @@ export default function Home() {
       prompt,
       providers: selectedProviders,
     });
+
+    setPrompt("");
   };
 
   const toggleProvider = (provider: string) => {
